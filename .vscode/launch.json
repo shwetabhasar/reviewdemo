@@ -1,0 +1,117 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Electron (Simple)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+      "args": ["."],
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Electron: Main Process",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+      "args": [".", "--inspect=5858"],
+      "outputCapture": "std",
+      "sourceMaps": true,
+      "env": {
+        "NODE_ENV": "development",
+        "ELECTRON_ENABLE_LOGGING": "true"
+      },
+      "console": "integratedTerminal",
+      "timeout": 30000
+    },
+    {
+      "name": "Electron: Renderer Process",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9223,
+      "webRoot": "${workspaceFolder}/src",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///./*": "${webRoot}/*",
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/*",
+        "/*": "*",
+        "/./~/*": "${webRoot}/../node_modules/*"
+      },
+      "timeout": 30000,
+      "trace": true
+    },
+    {
+      "name": "Electron: Main (Wait for Debugger)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+      "args": [".", "--inspect-brk=5858"],
+      "outputCapture": "std",
+      "sourceMaps": true,
+      "env": {
+        "NODE_ENV": "development",
+        "ELECTRON_ENABLE_LOGGING": "true"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Electron: All (Main + Renderer)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+      "args": [".", "--remote-debugging-port=9223", "--inspect=5858"],
+      "outputCapture": "std",
+      "sourceMaps": true,
+      "env": {
+        "NODE_ENV": "development",
+        "ELECTRON_ENABLE_LOGGING": "true"
+      },
+      "console": "integratedTerminal",
+      "timeout": 30000
+    },
+    {
+      "name": "Debug PDF Compression",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/electron/test-compression.js",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Attach to Electron Main",
+      "type": "node",
+      "request": "attach",
+      "port": 5858,
+      "timeout": 30000,
+      "sourceMaps": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug",
+      "configurations": ["Electron: All (Main + Renderer)", "Electron: Renderer Process"],
+      "stopAll": true
+    }
+  ]
+}

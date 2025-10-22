@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Vite Dev Server",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE v",
+          "endsPattern": "➜  Local:   http://localhost:5173"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Kill Vite Server",
+      "type": "shell",
+      "command": "taskkill /F /IM node.exe /T || killall node || true",
+      "windows": {
+        "command": "taskkill /F /IM node.exe /T"
+      },
+      "linux": {
+        "command": "killall node || true"
+      },
+      "osx": {
+        "command": "killall node || true"
+      }
+    }
+  ]
+}

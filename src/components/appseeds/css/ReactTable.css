@@ -1,0 +1,68 @@
+/* .table-sort-label {
+    display: flex;
+    width: 100%;
+}
+
+.table-sort-label-right {
+    flex-direction: row-reverse;
+}
+
+.table-sort-label .MuiTableSortLabel-icon {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.table-sort-label:hover .MuiTableSortLabel-icon,
+.table-sort-label.Mui-active .MuiTableSortLabel-icon {
+    opacity: 1;
+}
+
+.table-sort-label-right .MuiTableSortLabel-icon {
+    margin-right: 0.5em;
+    margin-left: -0.5em;
+} */
+
+.table-sort-label {
+    display: flex;
+    width: 100%;
+    align-items: center;
+}
+
+.table-sort-label-right {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+.table-sort-label-left {
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+.table-sort-label-center {
+    flex-direction: row;
+    justify-content: center;
+}
+
+.table-sort-label .MuiTableSortLabel-icon {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.table-sort-label:hover .MuiTableSortLabel-icon,
+.table-sort-label.Mui-active .MuiTableSortLabel-icon {
+    opacity: 1;
+}
+
+.table-sort-label-right .MuiTableSortLabel-icon {
+    margin-right: 0.5em;
+    margin-left: -0.5em;
+}
+
+.table-sort-label-left .MuiTableSortLabel-icon {
+    margin-right: -0.5em;
+    margin-left: 0.5em;
+}
+
+.table-sort-label-center .MuiTableSortLabel-icon {
+    margin-left: 0.5em;
+}

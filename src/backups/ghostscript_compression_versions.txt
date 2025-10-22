@@ -1,0 +1,134 @@
+Version 1.0 = Normal
+async compressWithGhostscript(inputPath, outputPath, targetSizeKB) {
+  let beforeBytes = null;
+   try {
+    const platform = process.platform;
+    const gsCommand = platform === 'win32' ? 'gswin64c' : 'gs';
+
+    const stats = await fs.stat(inputPath);
+    beforeBytes = stats.size;
+
+    const compressionRatio = (targetSizeKB * 1024) / stats.size;
+    let dpi = 150;
+    if (compressionRatio < 0.1) dpi = 72;
+    else if (compressionRatio < 0.3) dpi = 96;
+    else if (compressionRatio < 0.5) dpi = 120;
+
+    const command = `${gsCommand} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH -dQUIET -dColorImageResolution=${dpi} -dGrayImageResolution=${dpi} -dMonoImageResolution=${dpi * 2} -dOptimize=true -dSubsetFonts=true -sOutputFile="${outputPath}" "${inputPath}"`;
+
+    await execAsync(command);
+
+    const compressedStats = await fs.stat(outputPath);
+    _logSummary('Ghostscript', beforeBytes, compressedStats.size, targetSizeKB, true);
+
+    return {
+      success: true,
+      originalSize: beforeBytes,
+      compressedSize: compressedStats.size,
+      compressionRatio: ((1 - compressedStats.size / beforeBytes) * 100).toFixed(1),
+      method: 'ghostscript'
+    };
+  } catch (error) {
+    _logSummary('Ghostscript', beforeBytes, null, targetSizeKB, false, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+Version 2.0 = Aggressive than version 1.0
+// New Version - Aggresive
+  async compressWithGhostscript(inputPath, outputPath, targetSizeKB) {
+    let beforeBytes = null;
+    try {
+      const platform = process.platform;
+      const gsCommand = platform === 'win32' ? 'gswin64c' : 'gs';
+
+      const stats = await fs.stat(inputPath);
+      beforeBytes = stats.size;
+
+      // How hard do we need to squeeze?
+      const ratioNeeded = (targetSizeKB * 1024) / beforeBytes;
+
+      // Aggressive knobs tuned by required ratio
+      let dpi, jpegQ, preset;
+      if (ratioNeeded < 0.1) {
+        // need >90% shrink
+        dpi = 72;
+        jpegQ = 45;
+        preset = 'screen';
+      } else if (ratioNeeded < 0.3) {
+        // need 70–90% shrink
+        dpi = 96;
+        jpegQ = 50;
+        preset = 'screen';
+      } else if (ratioNeeded < 0.5) {
+        // need 50–70% shrink
+        dpi = 120;
+        jpegQ = 60;
+        preset = 'ebook';
+      } else {
+        // mild
+        dpi = 150;
+        jpegQ = 65;
+        preset = 'ebook';
+      }
+
+      const args = [
+        `-sDEVICE=pdfwrite`,
+        `-dCompatibilityLevel=1.4`,
+        `-dPDFSETTINGS=/${preset}`,
+        `-dNOPAUSE`,
+        `-dBATCH`,
+        `-dQUIET`,
+
+        // Downsample with Bicubic for better perceptual quality
+        `-dDownsampleColorImages=true`,
+        `-dColorImageDownsampleType=/Bicubic`,
+        `-dColorImageDownsampleThreshold=1.5`,
+        `-dDownsampleGrayImages=true`,
+        `-dGrayImageDownsampleType=/Bicubic`,
+        `-dGrayImageDownsampleThreshold=1.5`,
+        `-dDownsampleMonoImages=true`,
+        `-dMonoImageDownsampleType=/Subsample`,
+        `-dMonoImageDownsampleThreshold=1.5`,
+
+        // Force JPEG re-encode with explicit quality
+        `-dAutoFilterColorImages=false`,
+        `-dAutoFilterGrayImages=false`,
+        `-sColorImageFilter=/DCTEncode`,
+        `-sGrayImageFilter=/DCTEncode`,
+        `-dJPEGQ=${jpegQ}`,
+
+        // Resolutions
+        `-dColorImageResolution=${dpi}`,
+        `-dGrayImageResolution=${dpi}`,
+        `-dMonoImageResolution=${dpi * 2}`,
+
+        // Extra wins
+        `-dDetectDuplicateImages=true`,
+        `-dEncodeColorImages=true`,
+        `-dEncodeGrayImages=true`,
+        `-dCompressFonts=true`,
+        `-dSubsetFonts=true`,
+
+        `-sOutputFile="${outputPath}"`,
+        `"${inputPath}"`
+      ];
+
+      await execAsync(`${gsCommand} ${args.join(' ')}`);
+
+      const compressedStats = await fs.stat(outputPath);
+      _logSummary(`Ghostscript/${preset}`, beforeBytes, compressedStats.size, targetSizeKB, true);
+
+      return {
+        success: true,
+        originalSize: beforeBytes,
+        compressedSize: compressedStats.size,
+        compressionRatio: ((1 - compressedStats.size / beforeBytes) * 100).toFixed(1),
+        method: `ghostscript:${preset}`
+      };
+    } catch (error) {
+      _logSummary('Ghostscript', beforeBytes, null, targetSizeKB, false, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+

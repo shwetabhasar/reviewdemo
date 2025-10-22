@@ -1,0 +1,128 @@
+Version 1.0 = Very Aggressive
+async compressViaImages(inputPath, outputPath, targetSizeKB) {
+    let beforeBytes = null;
+    try {
+      const stats = await fs.stat(inputPath);
+      beforeBytes = stats.size;
+
+      const pdfImages = await this.extractPagesAsImages(inputPath);
+      const pdfDoc = await PDFDocument.create();
+
+      const compressionRatio = (targetSizeKB * 1024) / stats.size;
+      let imageQuality = 85;
+      if (compressionRatio < 0.1) imageQuality = 50;
+      else if (compressionRatio < 0.3) imageQuality = 65;
+      else if (compressionRatio < 0.5) imageQuality = 75;
+
+      for (const imagePath of pdfImages) {
+        const compressedImageBuffer = await sharp(imagePath)
+          .jpeg({ quality: imageQuality, progressive: true, optimizeScans: true })
+          .toBuffer();
+
+        const metadata = await sharp(imagePath).metadata();
+        const jpegImage = await pdfDoc.embedJpg(compressedImageBuffer);
+        const page = pdfDoc.addPage([metadata.width, metadata.height]);
+        page.drawImage(jpegImage, { x: 0, y: 0, width: metadata.width, height: metadata.height });
+
+        await fs.unlink(imagePath).catch(() => {});
+      }
+
+      const compressedPdfBytes = await pdfDoc.save({ useObjectStreams: true });
+      await fs.writeFile(outputPath, compressedPdfBytes);
+      const outStats = await fs.stat(outputPath);
+
+      _logSummary('Image-based', beforeBytes, outStats.size, targetSizeKB, true);
+
+      await this.cleanupTempFiles();
+
+      return {
+        success: true,
+        originalSize: beforeBytes,
+        compressedSize: outStats.size,
+        compressionRatio: ((1 - outStats.size / beforeBytes) * 100).toFixed(1),
+        method: 'image-based'
+      };
+    } catch (error) {
+      _logSummary('Image-based', beforeBytes, null, targetSizeKB, false, error.message);
+      await this.cleanupTempFiles();
+      return { success: false, error: error.message };
+    }
+  }
+
+Version 2.0 = Light than vesrion 1.0
+  // New Version - Soft
+  async compressViaImages(inputPath, outputPath, targetSizeKB) {
+    let beforeBytes = null;
+    try {
+      console.log('[PDFCompressor] Starting gentler image-based compression...');
+      const stats = await fs.stat(inputPath);
+      beforeBytes = stats.size;
+
+      const pdfImages = await this.extractPagesAsImages(inputPath);
+
+      // Start gently; adjust only a little to approach target
+      let quality = 90; // higher than before to preserve detail
+      const TOL = 12; // ± KB tolerance around target
+      const MIN_Q = 55; // don't go below this
+      const UP_STEP = 5; // gentle increase if way under target
+      const DOWN_STEP = 10; // gentle decrease if slightly above target
+
+      const buildAtQuality = async (q) => {
+        const doc = await PDFDocument.create();
+        for (const imgPath of pdfImages) {
+          const buf = await sharp(imgPath)
+            .jpeg({
+              quality: q,
+              progressive: true,
+              optimizeScans: true,
+              chromaSubsampling: '4:4:4' // keep text edges crisp
+            })
+            .toBuffer();
+
+          const meta = await sharp(imgPath).metadata();
+          const jpg = await doc.embedJpg(buf);
+          const page = doc.addPage([meta.width, meta.height]);
+          page.drawImage(jpg, { x: 0, y: 0, width: meta.width, height: meta.height });
+        }
+        return await doc.save({ useObjectStreams: true });
+      };
+
+      // First attempt
+      let bytes = await buildAtQuality(quality);
+      let afterKB = bytes.length / 1024;
+
+      // Gently step towards target (max 2 adjustments)
+      if (afterKB > targetSizeKB + TOL) {
+        quality = Math.max(MIN_Q, quality - DOWN_STEP);
+        bytes = await buildAtQuality(quality);
+        afterKB = bytes.length / 1024;
+
+        if (afterKB > targetSizeKB + TOL && quality > MIN_Q) {
+          quality = Math.max(MIN_Q, quality - DOWN_STEP);
+          bytes = await buildAtQuality(quality);
+          afterKB = bytes.length / 1024;
+        }
+      } else if (afterKB < targetSizeKB - 30) {
+        quality = Math.min(95, quality + UP_STEP);
+        bytes = await buildAtQuality(quality);
+        afterKB = bytes.length / 1024;
+      }
+
+      await fs.writeFile(outputPath, bytes);
+      await this.cleanupTempFiles();
+
+      _logSummary('Image-based (gentle)', beforeBytes, bytes.length, targetSizeKB, true);
+
+      return {
+        success: true,
+        originalSize: beforeBytes,
+        compressedSize: bytes.length,
+        compressionRatio: ((1 - bytes.length / beforeBytes) * 100).toFixed(1),
+        method: 'image-based'
+      };
+    } catch (error) {
+      await this.cleanupTempFiles();
+      _logSummary('Image-based', beforeBytes, null, targetSizeKB, false, error.message);
+      return { success: false, error: error.message };
+    }
+  }

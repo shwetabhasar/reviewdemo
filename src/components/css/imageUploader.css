@@ -1,0 +1,15 @@
+/* Custom styles for the advanced cropper */
+.custom-cropper-wrapper {
+    background-color: white !important;
+    /* White background for the wrapper */
+}
+
+.custom-cropper-background {
+    background-color: white !important;
+    /* White background for the image */
+}
+
+.custom-cropper-overlay {
+    box-shadow: 0 0 0 10000px rgba(255, 255, 255, 0.8);
+    /* White overlay */
+}

@@ -5,9 +5,8 @@ import MainRoutes from './MainRoutes';
 import LoginRoutes from './LoginRoutes';
 import OwnerRoutes from './OwnerRoutes';
 import ProtectedRoutes from './ProtectedRoutes';
-import FinanceRoutes from './FinanceRoutes';
 
-const routes = [LoginRoutes, OwnerRoutes, FinanceRoutes, MainRoutes, ProtectedRoutes];
+const routes = [LoginRoutes, OwnerRoutes, MainRoutes, ProtectedRoutes];
 
 // Detect packaged Electron (file://) or non-dev build
 const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';

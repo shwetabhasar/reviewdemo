@@ -1,21 +1,9 @@
-// electron/main.js - Cleaned and Modularized
+// electron/main.js - Simplified with only Owner List
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
-// Import handler modules
-const { registerFolderHandlers } = require('./folderHandlers');
-const { registerDocumentHandlers } = require('./documentHandlers');
-const { registerImageHandlers } = require('./imageHandlers');
-const { registerPdfHandlers } = require('./pdfHandlers');
-
-// Import external handler modules
-const { registerFirebaseDocumentSync } = require('./firebaseDocumentSync');
-const { registerWebsiteDownloadHandlers } = require('./websiteDownloadManager');
-const { registerFinanceStampHandlers } = require('./financeStampHandlers');
-const { registerPdfMergerHandlers } = require('./pdfMerger');
-const { registerPdfPrinterHandlers } = require('./pdfPrinter');
-const { registerPdfPageHandlers } = require('./pdfPageExtractor');
-const { registerPdfStampHandlers } = require('./pdfStamper');
+// Import only owner list handler
+const { registerOwnerListHandlers } = require('./ownerListHandlers');
 
 app.disableHardwareAcceleration();
 
@@ -158,20 +146,8 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
 
-  // Register modular handlers
-  registerFolderHandlers(ipcMain);
-  registerDocumentHandlers(ipcMain);
-  registerImageHandlers(ipcMain);
-  registerPdfHandlers(ipcMain);
-  registerPdfPageHandlers(ipcMain);
-
-  // Register external handlers
-  registerFirebaseDocumentSync(ipcMain);
-  registerPdfStampHandlers(ipcMain, mainWindow);
-  registerWebsiteDownloadHandlers(ipcMain, mainWindow);
-  registerFinanceStampHandlers(ipcMain);
-  registerPdfMergerHandlers(ipcMain);
-  registerPdfPrinterHandlers(ipcMain);
+  // Register ONLY owner list handlers
+  registerOwnerListHandlers(ipcMain);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

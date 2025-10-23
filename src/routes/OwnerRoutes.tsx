@@ -5,7 +5,6 @@ import { lazy } from 'react';
 import DashboardLayout from 'common/layout/Dashboard';
 import Loadable from 'components/appseeds/common/Loadable';
 import AuthGuard from 'access/utils/AuthGuard';
-import OwnerView from 'owner/pages/OwnerView';
 
 //Owner
 const OwnerList = Loadable(lazy(() => import('owner/pages/OwnerList')));
@@ -30,10 +29,6 @@ const OwnerRoutes = {
         {
           path: 'list',
           element: <OwnerList />
-        },
-        {
-          path: 'view/:ownerId',
-          element: <OwnerView />
         }
       ]
     }

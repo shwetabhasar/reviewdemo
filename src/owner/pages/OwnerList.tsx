@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 // src/owner/components/OwnerList.tsx
 
 import { ColumnDef } from '@tanstack/react-table';

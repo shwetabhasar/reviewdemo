@@ -8,12 +8,10 @@ import { getSelectAndIdColumns } from 'components/appseeds/react-table/ReactTabl
 import { Snackbar, IconButton, Tooltip, Alert, Button, Box, Chip, Menu, MenuItem, CircularProgress, Typography } from '@mui/material';
 import {
   Folder as FolderIcon,
-  Visibility as VisibilityIcon,
   MoreVert as MoreVertIcon,
   Refresh as RefreshIcon,
   Cloud as CloudIcon,
   CloudOff as CloudOffIcon,
-  Print as PrintIcon,
   Sync as SyncIcon
 } from '@mui/icons-material';
 import { useShowroom } from 'access/contexts/showRoomContext';
@@ -34,7 +32,7 @@ const OwnerList = () => {
   const [owners, setOwners] = useState<Owner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [basePath] = useState<string>('D:\\Tri-Color Honda');
+  const [basePath] = useState<string>('C:\\Tri-Color Honda');
 
   // UI state
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -54,6 +52,11 @@ const OwnerList = () => {
     setError(null);
 
     try {
+      // Check if electronAPI exists
+      if (!window.electronAPI || !window.electronAPI.getOwnerList) {
+        throw new Error('Electron API not available. Please ensure the app is running in Electron.');
+      }
+
       // Get owner list from electron API (which reads from local storage)
       const result = await window.electronAPI.getOwnerList(basePath);
 
@@ -109,19 +112,6 @@ const OwnerList = () => {
     }
   };
 
-  // Handle view owner
-  const handleViewOwner = (owner: Owner) => {
-    // You can customize this to navigate to a detail view or open a dialog
-    handleOpenFolder(owner.folderPath);
-  };
-
-  // Handle print
-  const handlePrint = (owner: Owner) => {
-    setSnackbarMessage(`Print functionality for ${owner.name} - Coming soon`);
-    setSnackbarSeverity('info');
-    setSnackbarOpen(true);
-  };
-
   // Manual refresh
   const handleManualRefresh = async () => {
     setIsManualRefreshing(true);
@@ -147,86 +137,68 @@ const OwnerList = () => {
     };
   }, []);
 
-  // Define table columns
+  // Define table columns with proper alignment
   const columns = useMemo<ColumnDef<Owner>[]>(() => {
     const baseColumns: ColumnDef<Owner>[] = [
       {
         id: 'name',
-        header: 'Name',
+        header: 'NAME',
         accessorKey: 'name',
+        size: 350,
         cell: ({ row }) => (
-          <Box>
-            <Typography variant="body2" fontWeight="medium">
-              {row.original.name}
-            </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontWeight: 500,
+              fontSize: '14px',
+              lineHeight: '40px',
+              color: '#333'
+            }}
+          >
+            {row.original.name}
+          </Typography>
           </Box>
         )
       },
       {
         id: 'contact',
-        header: 'Contact',
+        header: 'CONTACT',
         accessorKey: 'contact',
+        size: 250,
         cell: ({ row }) => (
-          <Typography variant="body2" color="text.secondary">
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Typography 
+            variant="body2"
+            sx={{ 
+              fontSize: '14px',
+              lineHeight: '40px',
+              color: '#666'
+            }}
+          >
             {row.original.contact}
           </Typography>
-        )
-      },
-      {
-        id: 'status',
-        header: 'Status',
-        accessorKey: 'status',
-        cell: ({ row }) => (
-          <Chip
-            label="Showroom"
-            size="small"
-            color="primary"
-            icon={<FolderIcon sx={{ fontSize: 16 }} />}
-            sx={{
-              backgroundColor: 'rgba(0, 128, 128, 0.1)',
-              color: 'teal',
-              '& .MuiChip-icon': {
-                color: 'teal'
-              }
-            }}
-          />
-        )
-      },
-      {
-        id: 'syncStatus',
-        header: 'Sync Status',
-        accessorKey: 'syncStatus',
-        cell: ({ row }) => (
-          <Chip
-            label="Synced"
-            size="small"
-            color="success"
-            icon={<CloudIcon sx={{ fontSize: 16 }} />}
-            sx={{
-              backgroundColor: 'rgba(76, 175, 80, 0.1)',
-              color: 'success.main'
-            }}
-          />
+          </Box>
         )
       },
       {
         id: 'actions',
-        header: 'Actions',
+        header: 'ACTIONS',
+        size: 150,
         cell: ({ row }) => (
-          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-            <Tooltip title="View">
-              <IconButton size="small" onClick={() => handleViewOwner(row.original)} sx={{ color: 'teal' }}>
-                <VisibilityIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <Tooltip title="Open Folder">
-              <IconButton size="small" onClick={() => handleOpenFolder(row.original.folderPath)} sx={{ color: 'teal' }}>
-                <FolderIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Print">
-              <IconButton size="small" onClick={() => handlePrint(row.original)} sx={{ color: 'gray' }}>
-                <PrintIcon fontSize="small" />
+              <IconButton 
+                size="medium" 
+                onClick={() => handleOpenFolder(row.original.folderPath)} 
+                sx={{ 
+                  color: '#008080',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 128, 128, 0.08)'
+                  }
+                }}
+              >
+                <FolderIcon />
               </IconButton>
             </Tooltip>
           </Box>
@@ -234,13 +206,11 @@ const OwnerList = () => {
       }
     ];
 
-    // Combine select/id columns with base columns
-    // If getSelectAndIdColumns doesn't accept arguments, we need to spread the columns
     const selectAndIdColumns = getSelectAndIdColumns<Owner>();
     return [...selectAndIdColumns, ...baseColumns];
   }, []);
 
-  // Export columns (for export functionality) - should be string array of column IDs
+  // Export columns (for export functionality)
   const exportColumns = useMemo<string[]>(() => {
     return ['name', 'contact', 'folderPath'];
   }, []);
@@ -263,49 +233,110 @@ const OwnerList = () => {
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        bgcolor: 'background.default'
+        bgcolor: '#ffffff'
       }}
     >
-      {/* Header */}
-      <Box sx={{ px: 3, pt: 3, pb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+      {/* Header Section - Enhanced Visibility */}
+      <Box 
+        sx={{ 
+          px: 4, 
+          py: 5,
+          background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          borderBottom: '3px solid #0d47a1'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box>
-            <Typography variant="h5" fontWeight="bold" color="primary.main" gutterBottom>
+            <Typography 
+              sx={{ 
+                fontSize: '32px',
+                fontWeight: 700,
+                color: '#ffffff',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
+                mb: 1.5
+              }}
+            >
               Owner List ({owners.length})
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <Chip
                 label={onlineStatus ? 'Online' : 'Offline'}
                 size="small"
-                color={onlineStatus ? 'success' : 'default'}
                 icon={onlineStatus ? <CloudIcon /> : <CloudOffIcon />}
                 sx={{
-                  backgroundColor: onlineStatus ? 'rgba(76, 175, 80, 0.1)' : 'rgba(0, 0, 0, 0.08)'
+                  backgroundColor: onlineStatus ? '#4caf50' : '#757575',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '12px'
                 }}
               />
-              <Chip label="Cached: Never" size="small" variant="outlined" sx={{ borderColor: 'divider' }} />
-              {showroomName && <Chip label={`Showroom: ${showroomName}`} size="small" color="info" variant="outlined" />}
+              <Chip 
+                label="Cached: Never" 
+                size="small"
+                sx={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  border: '1px solid rgba(255,255,255,0.3)'
+                }} 
+              />
+              {showroomName && (
+                <Chip 
+                  label={`Showroom: ${showroomName}`} 
+                  size="small"
+                  sx={{ 
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    color: 'white',
+                    fontWeight: 600,
+                    fontSize: '12px',
+                    border: '1px solid rgba(255,255,255,0.3)'
+                  }}
+                />
+              )}
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Button
-              variant="outlined"
-              startIcon={isManualRefreshing ? <CircularProgress size={16} color="inherit" /> : <SyncIcon />}
+              variant="contained"
+              size="large"
+              startIcon={isManualRefreshing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <SyncIcon />}
               onClick={handleManualRefresh}
               disabled={isManualRefreshing}
               sx={{
-                borderColor: 'divider',
-                color: 'text.primary',
+                backgroundColor: '#ffffff',
+                color: '#1976d2',
+                fontWeight: 700,
+                fontSize: '14px',
+                px: 3,
+                py: 1,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                 '&:hover': {
-                  backgroundColor: 'action.hover'
-                }
+                  backgroundColor: '#f5f5f5',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                },
+                transition: 'all 0.3s ease'
               }}
             >
               Sync
             </Button>
 
-            <IconButton onClick={handleMenuClick} size="small">
+            <IconButton 
+              onClick={handleMenuClick}
+              sx={{
+                backgroundColor: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                border: '2px solid rgba(255,255,255,0.3)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.3)'
+                }
+              }}
+            >
               <MoreVertIcon />
             </IconButton>
 
@@ -327,6 +358,7 @@ const OwnerList = () => {
                   handleMenuClose();
                   handleManualRefresh();
                 }}
+                sx={{ fontWeight: 600 }}
               >
                 <RefreshIcon fontSize="small" sx={{ mr: 1 }} />
                 Refresh List
@@ -336,39 +368,74 @@ const OwnerList = () => {
         </Box>
       </Box>
 
-      {/* Table */}
+      {/* Table Section */}
       <Box
         sx={{
           flexGrow: 1,
           px: 3,
-          pb: 2,
+          py: 3,
           overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          backgroundColor: '#fafafa'
         }}
       >
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-            <CircularProgress />
+            <CircularProgress size={50} />
           </Box>
         ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 2, fontSize: '14px', fontWeight: 600 }}>
             {error}
-            <Button size="small" onClick={loadOwners} sx={{ ml: 2 }}>
+            <Button size="small" onClick={loadOwners} sx={{ ml: 2, fontWeight: 700 }}>
               Retry
             </Button>
           </Alert>
-        ) : (
-          <ReactTable<Owner>
-            columns={columns}
-            exportColumns={exportColumns}
-            data={owners}
-            isAddButtonVisible={false}
-            entityName="Owner"
-            rowSelection={rowSelection}
-            onRowSelection={(value) => setRowSelection(value)}
-            enablePagination={true}
-          />
+      ) : (
+          <Box sx={{ 
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+            height: '100%',
+            '& table': {
+              width: '100%',
+              tableLayout: 'fixed',
+            },
+            '& thead th': {
+              textAlign: 'left !important',
+              paddingLeft: '16px !important',
+              paddingRight: '16px !important',
+              paddingTop: '12px !important',
+              paddingBottom: '12px !important',
+              verticalAlign: 'middle !important',
+            },
+            '& tbody td': {
+              textAlign: 'left !important',
+              paddingLeft: '16px !important',
+              paddingRight: '16px !important',
+              paddingTop: '12px !important',
+              paddingBottom: '12px !important',
+              verticalAlign: 'middle !important',
+            },
+            '& thead th:last-child': {
+              textAlign: 'center !important',
+            },
+            '& tbody td:last-child': {
+              textAlign: 'center !important',
+            }
+          }}>
+            <ReactTable<Owner>
+              columns={columns}
+              exportColumns={exportColumns}
+              data={owners}
+              isAddButtonVisible={false}
+              entityName="Owner"
+              rowSelection={rowSelection}
+              onRowSelection={(value) => setRowSelection(value)}
+              enablePagination={true}
+            />
+          </Box>
         )}
       </Box>
 
@@ -379,7 +446,7 @@ const OwnerList = () => {
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%', fontWeight: 600 }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>

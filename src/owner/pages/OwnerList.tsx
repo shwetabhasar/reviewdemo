@@ -146,7 +146,7 @@ const OwnerList = () => {
         accessorKey: 'name',
         size: 350,
         cell: ({ row }) => (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', pl: 0 }}>
           <Typography 
             variant="body2" 
             sx={{ 
@@ -192,9 +192,9 @@ const OwnerList = () => {
                 size="medium" 
                 onClick={() => handleOpenFolder(row.original.folderPath)} 
                 sx={{ 
-                  color: '#008080',
+                  color: '#0f745aff',
                   '&:hover': {
-                    backgroundColor: 'rgba(0, 128, 128, 0.08)'
+                    backgroundColor: 'rgba(25, 118, 210, 0.08)'
                   }
                 }}
               >
@@ -233,108 +233,161 @@ const OwnerList = () => {
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        bgcolor: '#ffffff'
+        bgcolor: '#fafafa'
       }}
     >
-      {/* Header Section - Enhanced Visibility */}
-      <Box 
-        sx={{ 
-          px: 4, 
-          py: 5,
-          background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-          borderBottom: '3px solid #0d47a1'
+      {/* OWNER LIST Header - Exact Match to Screenshot */}
+      <Box
+        sx={{
+          px: 4,
+          py: 7,
+          background: '#1976d2w',
+          color: '#0ea37eff',
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box>
-            <Typography 
-              sx={{ 
-                fontSize: '32px',
-                fontWeight: 700,
-                color: '#ffffff',
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-                textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
-                mb: 1.5
-              }}
-            >
-              Owner List ({owners.length})
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Chip
-                label={onlineStatus ? 'Online' : 'Offline'}
-                size="small"
-                icon={onlineStatus ? <CloudIcon /> : <CloudOffIcon />}
-                sx={{
-                  backgroundColor: onlineStatus ? '#4caf50' : '#757575',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: '12px'
-                }}
-              />
-              <Chip 
-                label="Cached: Never" 
-                size="small"
-                sx={{ 
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  color: 'white',
-                  fontWeight: 600,
-                  fontSize: '12px',
-                  border: '1px solid rgba(255,255,255,0.3)'
-                }} 
-              />
-              {showroomName && (
-                <Chip 
-                  label={`Showroom: ${showroomName}`} 
-                  size="small"
-                  sx={{ 
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    color: 'white',
-                    fontWeight: 600,
-                    fontSize: '12px',
-                    border: '1px solid rgba(255,255,255,0.3)'
-                  }}
-                />
-              )}
-            </Box>
-          </Box>
+        <Box
+  sx={{
+    display: 'flex',
+    alignItems: 'flex-start', // aligns top of title with top of button group
+    justifyContent: 'space-between',
+    mt: 1,
+  }}
+>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Left Section: Title and Chips BELOW it */}
+<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+  {/* OWNER LIST Title */}
+  <Typography
+    sx={{
+      fontSize: '26px',
+      fontWeight: 700,
+      color: '#17ad8dff',
+      letterSpacing: '0.5px',
+      textTransform: 'uppercase',
+      lineHeight: 1.2,
+      pb: 0.5, // small padding below title
+    }}
+  >
+    OWNER LIST ({owners.length})
+  </Typography>
+
+  {/* Chips row below the title */}
+  <Box
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      mt: 0.5, // space between title and chips
+    }}
+  >
+    <Chip
+      label={onlineStatus ? 'Online' : 'Offline'}
+      size="small"
+      icon={onlineStatus ? <CloudIcon sx={{ fontSize: '14px !important' }} /> : <CloudOffIcon sx={{ fontSize: '14px !important' }} />}
+      sx={{
+        backgroundColor: onlineStatus ? '#18a381ff' : '#757575',
+        color: '#ffffff',
+        fontWeight: 600,
+        fontSize: '11px',
+        height: '26px',
+        borderRadius: '4px',
+        '& .MuiChip-icon': {
+          color: '#ffffff',
+          marginLeft: '6px',
+        },
+      }}
+    />
+    <Chip
+      label="Cached: Never"
+      size="small"
+      sx={{
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        color: '#121313f8',
+        fontWeight: 500,
+        fontSize: '14px',
+        height: '26px',
+        borderRadius: '4px',
+      }}
+    />
+    {showroomName && (
+      <Chip
+        label={`Showroom: ${showroomName}`}
+        size="small"
+        sx={{
+          color: '#17a871ff',
+          fontWeight: 500,
+          fontSize: '14px',
+          height: '26px',
+          borderRadius: '4px',
+        }}
+      />
+    )}
+  </Box>
+</Box>
+
+
+
+          {/* Right Section: Sync + Menu */}
+          <Box
+  sx={{
+    display: 'flex',
+    alignItems: 'flex-start', // match alignment with title
+    justifyContent: 'flex-end',
+    gap: 1.5,
+    pt: 0.5, // slight top padding to center visually
+  }}
+>
+
             <Button
               variant="contained"
-              size="large"
-              startIcon={isManualRefreshing ? <CircularProgress size={18} sx={{ color: 'white' }} /> : <SyncIcon />}
+              size="medium"
+              startIcon={
+                isManualRefreshing ? (
+                  <CircularProgress size={16} sx={{ color: '#1976d2' }} />
+                ) : (
+                  <SyncIcon sx={{ fontSize: '18px' }} />
+                )
+              }
               onClick={handleManualRefresh}
               disabled={isManualRefreshing}
               sx={{
                 backgroundColor: '#ffffff',
-                color: '#1976d2',
-                fontWeight: 700,
+                color: 'rgba(0, 7, 6, 1)',
+                fontWeight: 600,
                 fontSize: '14px',
-                px: 3,
-                py: 1,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                px: 2.5,
+                py: 0.8,
+                textTransform: 'none',
+                borderRadius: '4px',
+                boxShadow: 'none',
+                minWidth: 'auto',
                 '&:hover': {
-                  backgroundColor: '#f5f5f5',
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                  backgroundColor: '#fafafa',
+                  boxShadow: 'none',
                 },
-                transition: 'all 0.3s ease'
+                '&:disabled': {
+                  backgroundColor: '#e0e0e0',
+                  color: '#999',
+                }
               }}
             >
               Sync
             </Button>
 
-            <IconButton 
+            <IconButton
               onClick={handleMenuClick}
               sx={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                border: '2px solid rgba(255,255,255,0.3)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255,255,255,0.3)'
-                }
+                backgroundColor: 'transparent',
+                color: '#0c0c0cff',
+                width: '36px',
+                height: '36px',
+                borderRadius: '4px',
+                '&:hover': { 
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)' 
+                },
               }}
             >
               <MoreVertIcon />
@@ -344,13 +397,14 @@ const OwnerList = () => {
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
-              anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right'
-              }}
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right'
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              PaperProps={{
+                sx: {
+                  mt: 0.5,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  borderRadius: '4px'
+                }
               }}
             >
               <MenuItem
@@ -358,9 +412,14 @@ const OwnerList = () => {
                   handleMenuClose();
                   handleManualRefresh();
                 }}
-                sx={{ fontWeight: 600 }}
+                sx={{ 
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  py: 1.5,
+                  px: 2
+                }}
               >
-                <RefreshIcon fontSize="small" sx={{ mr: 1 }} />
+                <RefreshIcon fontSize="small" sx={{ mr: 1.5 }} />
                 Refresh List
               </MenuItem>
             </Menu>
@@ -370,19 +429,20 @@ const OwnerList = () => {
 
       {/* Table Section */}
       <Box
-        sx={{
-          flexGrow: 1,
-          px: 3,
-          py: 3,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: '#fafafa'
-        }}
-      >
+  sx={{
+    flexGrow: 1,
+    px: 3,
+    py: 1, // reduced from 3 to 1.5
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: '#f5f5f5',
+  }}
+>
+
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-            <CircularProgress size={50} />
+            <CircularProgress size={50} sx={{ color: '#1976d2' }} />
           </Box>
         ) : error ? (
           <Alert severity="error" sx={{ mb: 2, fontSize: '14px', fontWeight: 600 }}>
@@ -391,13 +451,14 @@ const OwnerList = () => {
               Retry
             </Button>
           </Alert>
-      ) : (
+        ) : (
           <Box sx={{ 
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+            backgroundColor: '#ffffff',
+            borderRadius: '4px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             overflow: 'hidden',
             height: '100%',
+            border: '1px solid #e0e0e0',
             '& table': {
               width: '100%',
               tableLayout: 'fixed',
@@ -410,6 +471,18 @@ const OwnerList = () => {
               paddingBottom: '12px !important',
               verticalAlign: 'middle !important',
             },
+            '& thead th:first-child': {
+              width: '60px !important',
+              paddingRight: '8px !important',
+              paddingLeft: '24px !important',
+            },
+            '& thead th:nth-child(2)': {
+              paddingLeft: '8px !important',
+              paddingRight: '16px !important',
+            },
+            '& thead th:nth-child(3)': {
+              paddingLeft: '16px !important',
+            },
             '& tbody td': {
               textAlign: 'left !important',
               paddingLeft: '16px !important',
@@ -417,6 +490,18 @@ const OwnerList = () => {
               paddingTop: '12px !important',
               paddingBottom: '12px !important',
               verticalAlign: 'middle !important',
+            },
+            '& tbody td:first-child': {
+              width: '60px !important',
+              paddingRight: '8px !important',
+              paddingLeft: '24px !important',
+            },
+            '& tbody td:nth-child(2)': {
+              paddingLeft: '8px !important',
+              paddingRight: '16px !important',
+            },
+            '& tbody td:nth-child(3)': {
+              paddingLeft: '16px !important',
             },
             '& thead th:last-child': {
               textAlign: 'center !important',

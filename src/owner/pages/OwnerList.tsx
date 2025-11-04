@@ -690,7 +690,6 @@ const handlePDFComparison = (pdfPaths: string[] | undefined, ownerName: string) 
         )}
       </Box>
       
-
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbarOpen}

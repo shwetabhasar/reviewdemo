@@ -689,6 +689,7 @@ const handlePDFComparison = (pdfPaths: string[] | undefined, ownerName: string) 
           </Box>
         )}
       </Box>
+      
 
       {/* Snackbar for notifications */}
       <Snackbar

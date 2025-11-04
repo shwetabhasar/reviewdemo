@@ -1,14 +1,16 @@
-// electron/preload.js - Simplified with only Owner List
-console.log('Preload script loading...');
-
+// electron/preload.js
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  // Get list of owners from folder structure
+  // Owner List APIs
   getOwnerList: (basePath) => ipcRenderer.invoke('get-owner-list', basePath),
+  
+  openOwnerFolder: (folderPath) => ipcRenderer.invoke('open-owner-folder', folderPath),
+  
+  comparePdfs: (ownerName, basePath) => ipcRenderer.invoke('compare-pdfs', ownerName, basePath),
 
-  // Opens the owner folder in file explorer
-  openOwnerFolder: (folderPath) => ipcRenderer.invoke('open-owner-folder', folderPath)
+  // Add your other existing APIs below...
+  // Example:
+  // loadSettings: () => ipcRenderer.invoke('load-settings'),
+  // saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
 });
-
-console.log('electronAPI exposed with Owner List features!');

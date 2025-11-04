@@ -1,17 +1,10 @@
-import { ReactElement, useEffect } from 'react';
+import { styled } from '@mui/material/styles';
 
-// ==============================|| NAVIGATION - SCROLL TO TOP ||============================== //
+const ScrollX = styled('div')({
+  width: '100%',
+  overflowX: 'visible',   // ✅ prevent horizontal scrollbar here
+  display: 'block'
+});
 
-const ScrollTop = ({ children }: { children: ReactElement | null }) => {
-  useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'smooth'
-    });
-  }, []);
 
-  return children || null;
-};
-
-export default ScrollTop;
+export default ScrollX;

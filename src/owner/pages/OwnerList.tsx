@@ -5,14 +5,27 @@ import { ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState, useEffect } from 'react';
 import ReactTable from 'components/appseeds/react-table/ReactTable';
 import { getSelectAndIdColumns } from 'components/appseeds/react-table/ReactTableUtils';
-import { Snackbar, IconButton, Tooltip, Alert, Button, Box, Chip, Menu, MenuItem, CircularProgress, Typography } from '@mui/material';
+import {
+  Snackbar,
+  IconButton,
+  Tooltip,
+  Alert,
+  Button,
+  Box,
+  Chip,
+  Menu,
+  MenuItem,
+  CircularProgress,
+  Typography
+} from '@mui/material';
 import {
   Folder as FolderIcon,
   MoreVert as MoreVertIcon,
   Refresh as RefreshIcon,
   Cloud as CloudIcon,
   CloudOff as CloudOffIcon,
-  Sync as SyncIcon
+  Sync as SyncIcon,
+  Compare as CompareIcon
 } from '@mui/icons-material';
 import { useShowroom } from 'access/contexts/showRoomContext';
 
@@ -37,9 +50,10 @@ const OwnerList = () => {
   // UI state
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'warning' | 'info'>('success');
+  const [snackbarSeverity, setSnackbarSeverity] =
+    useState<'success' | 'error' | 'warning' | 'info'>('success');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [onlineStatus, setOnlineStatus] = useState(navigator.onLine);
+  const [onlineStatus, setOnlineStatus] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 
@@ -52,25 +66,26 @@ const OwnerList = () => {
     setError(null);
 
     try {
-      // Check if electronAPI exists
       if (!window.electronAPI || !window.electronAPI.getOwnerList) {
-        throw new Error('Electron API not available. Please ensure the app is running in Electron.');
+        throw new Error(
+          'Electron API not available. Please ensure the app is running in Electron.'
+        );
       }
 
-      // Get owner list from electron API (which reads from local storage)
       const result = await window.electronAPI.getOwnerList(basePath);
 
       if (result.success) {
-        // Transform the data to match the expected format
-        const transformedOwners: Owner[] = (result.owners || []).map((owner: any, index: number) => ({
-          id: owner.mobile || `owner-${index}`,
-          name: owner.name,
-          contact: owner.mobile,
-          mobile: owner.mobile,
-          folderPath: owner.folderPath,
-          status: 'active',
-          syncStatus: 'synced'
-        }));
+        const transformedOwners: Owner[] = (result.owners || []).map(
+          (owner: any, index: number) => ({
+            id: owner.mobile || `owner-${index}`,
+            name: owner.name,
+            contact: owner.mobile,
+            mobile: owner.mobile,
+            folderPath: owner.folderPath,
+            status: 'active',
+            syncStatus: 'synced'
+          })
+        );
 
         setOwners(transformedOwners);
         setSnackbarMessage(`Loaded ${transformedOwners.length} owners`);
@@ -83,7 +98,10 @@ const OwnerList = () => {
         setSnackbarOpen(true);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while loading owners';
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'An error occurred while loading owners';
       setError(errorMessage);
       setSnackbarMessage(errorMessage);
       setSnackbarSeverity('error');
@@ -105,12 +123,74 @@ const OwnerList = () => {
         setSnackbarOpen(true);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      const errorMessage =
+        err instanceof Error ? err.message : 'An error occurred';
       setSnackbarMessage(`Error: ${errorMessage}`);
       setSnackbarSeverity('error');
       setSnackbarOpen(true);
     }
   };
+
+  // Handle compare action
+  // NEW CODE - Replace with this:
+const handleCompare = async (owner: Owner) => {
+  try {
+    setSnackbarMessage(`Opening PDF selector for ${owner.name}...`);
+    setSnackbarSeverity('info');
+    setSnackbarOpen(true);
+
+    const result = await window.electronAPI.comparePdfs(owner.name, basePath);
+
+    if (result.canceled) {
+      setSnackbarMessage('PDF selection cancelled');
+      setSnackbarSeverity('info');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    if (!result.success) {
+      setSnackbarMessage(result.error || 'Failed to select PDFs for comparison');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    if (!result.files || result.files.length === 0) {
+      setSnackbarMessage('No PDFs were selected');
+      setSnackbarSeverity('warning');
+      setSnackbarOpen(true);
+      return;
+    }
+
+    console.log('Selected PDFs for comparison:', result.files);
+setSnackbarMessage(
+  `${result.count || result.files?.length || 0} PDFs selected for ${owner.name}. Ready to compare!`  // <-- NEW LINE
+);
+setSnackbarSeverity('success');
+    setSnackbarOpen(true);
+
+    handlePDFComparison(result.files, owner.name);
+
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : 'An error occurred during comparison';
+    console.error('Compare error:', err);
+    setSnackbarMessage(`Error: ${errorMessage}`);
+    setSnackbarSeverity('error');
+    setSnackbarOpen(true);
+  }
+};
+
+// Add this helper function right after handleCompare:
+const handlePDFComparison = (pdfPaths: string[] | undefined, ownerName: string) => {
+  if (!pdfPaths || pdfPaths.length === 0) {
+    console.log('No PDF paths provided for comparison');
+    return;
+  }
+  
+  console.log(`Comparing PDFs for ${ownerName}:`, pdfPaths);
+  // TODO: Implement what you want to do with the selected PDFs
+};
 
   // Manual refresh
   const handleManualRefresh = async () => {
@@ -118,9 +198,9 @@ const OwnerList = () => {
     await loadOwners();
   };
 
-  // Load owners on component mount
   useEffect(() => {
     loadOwners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Monitor online status
@@ -128,70 +208,86 @@ const OwnerList = () => {
     const handleOnline = () => setOnlineStatus(true);
     const handleOffline = () => setOnlineStatus(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      }
     };
   }, []);
 
-  // Define table columns with proper alignment
+  // Define table columns (kept as you had, left-aligned cells)
   const columns = useMemo<ColumnDef<Owner>[]>(() => {
     const baseColumns: ColumnDef<Owner>[] = [
       {
-        id: 'name',
-        header: 'NAME',
-        accessorKey: 'name',
-        size: 350,
-        cell: ({ row }) => (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', pl: 0 }}>
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              fontWeight: 500,
-              fontSize: '14px',
-              lineHeight: '40px',
-              color: '#333'
-            }}
-          >
-            {row.original.name}
-          </Typography>
-          </Box>
-        )
-      },
-      {
-        id: 'contact',
-        header: 'CONTACT',
-        accessorKey: 'contact',
-        size: 250,
-        cell: ({ row }) => (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <Typography 
-            variant="body2"
-            sx={{ 
-              fontSize: '14px',
-              lineHeight: '40px',
-              color: '#666'
-            }}
-          >
-            {row.original.contact}
-          </Typography>
-          </Box>
-        )
-      },
+  id: 'name',
+  header: () => (
+    <Typography sx={{ textAlign: 'left', fontWeight: 600 }}>
+      NAME
+    </Typography>
+  ),
+  accessorKey: 'name',
+  size: 350,
+  cell: ({ row }) => (
+    <Typography
+      variant="body2"
+      sx={{
+        fontWeight: 500,
+        fontSize: '14px',
+        color: '#333',
+        textAlign: 'left'
+      }}
+    >
+      {row.original.name}
+    </Typography>
+  )
+},
+{
+  id: 'contact',
+  header: () => (
+    <Typography sx={{ textAlign: 'left', fontWeight: 600 }}>
+      CONTACT
+    </Typography>
+  ),
+  accessorKey: 'contact',
+  size: 250,
+  cell: ({ row }) => (
+    <Typography
+      variant="body2"
+      sx={{
+        fontSize: '14px',
+        color: '#666',
+        textAlign: 'left'
+      }}
+    >
+      {row.original.contact}
+    </Typography>
+  )
+},
+
       {
         id: 'actions',
         header: 'ACTIONS',
         size: 150,
         cell: ({ row }) => (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
             <Tooltip title="Open Folder">
-              <IconButton 
-                size="medium" 
-                onClick={() => handleOpenFolder(row.original.folderPath)} 
-                sx={{ 
+              <IconButton
+                size="medium"
+                onClick={() => handleOpenFolder(row.original.folderPath)}
+                sx={{
                   color: '#0f745aff',
                   '&:hover': {
                     backgroundColor: 'rgba(25, 118, 210, 0.08)'
@@ -199,6 +295,20 @@ const OwnerList = () => {
                 }}
               >
                 <FolderIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Compare">
+              <IconButton
+                size="medium"
+                onClick={() => handleCompare(row.original)}
+                sx={{
+                  color: '#1976d2',
+                  '&:hover': {
+                    backgroundColor: 'rgba(25, 118, 210, 0.08)'
+                  }
+                }}
+              >
+                <CompareIcon />
               </IconButton>
             </Tooltip>
           </Box>
@@ -210,7 +320,6 @@ const OwnerList = () => {
     return [...selectAndIdColumns, ...baseColumns];
   }, []);
 
-  // Export columns (for export functionality)
   const exportColumns = useMemo<string[]>(() => {
     return ['name', 'contact', 'folderPath'];
   }, []);
@@ -227,120 +336,132 @@ const OwnerList = () => {
     setAnchorEl(null);
   };
 
+  // NOTE: outer container is the single scroll container now (no nested scrollbars).
   return (
     <Box
       sx={{
+        height: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
-        bgcolor: '#fafafa'
+        overflowY: 'auto', // single scrollbar for entire screen
+        overflowX: 'hidden',
+        '&::-webkit-scrollbar': {
+          width: '6px'
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: '#bfbfbf',
+          borderRadius: '4px'
+        },
+        '&::-webkit-scrollbar-thumb:hover': {
+          backgroundColor: '#999'
+        }
       }}
     >
-      {/* OWNER LIST Header - Exact Match to Screenshot */}
+      {/* OWNER LIST Header - Fixed at top of the flow (not position:fixed) */}
       <Box
         sx={{
           px: 4,
           py: 7,
-          background: '#1976d2w',
+          background: '#ffffff',
           color: '#0ea37eff',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
+          flexShrink: 0
         }}
       >
         <Box
-  sx={{
-    display: 'flex',
-    alignItems: 'flex-start', // aligns top of title with top of button group
-    justifyContent: 'space-between',
-    mt: 1,
-  }}
->
-
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            mt: 0.5
+          }}
+        >
           {/* Left Section: Title and Chips BELOW it */}
-<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-  {/* OWNER LIST Title */}
-  <Typography
-    sx={{
-      fontSize: '26px',
-      fontWeight: 700,
-      color: '#17ad8dff',
-      letterSpacing: '0.5px',
-      textTransform: 'uppercase',
-      lineHeight: 1.2,
-      pb: 0.5, // small padding below title
-    }}
-  >
-    OWNER LIST ({owners.length})
-  </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {/* OWNER LIST Title */}
+            <Typography
+              sx={{
+                fontSize: '26px',
+                fontWeight: 700,
+                color: '#17ad8dff',
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+                lineHeight: 1.2,
+                pb: 0.5
+              }}
+            >
+              OWNER LIST ({owners.length})
+            </Typography>
 
-  {/* Chips row below the title */}
-  <Box
-    sx={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 2,
-      mt: 0.5, // space between title and chips
-    }}
-  >
-    <Chip
-      label={onlineStatus ? 'Online' : 'Offline'}
-      size="small"
-      icon={onlineStatus ? <CloudIcon sx={{ fontSize: '14px !important' }} /> : <CloudOffIcon sx={{ fontSize: '14px !important' }} />}
-      sx={{
-        backgroundColor: onlineStatus ? '#18a381ff' : '#757575',
-        color: '#ffffff',
-        fontWeight: 600,
-        fontSize: '11px',
-        height: '26px',
-        borderRadius: '4px',
-        '& .MuiChip-icon': {
-          color: '#ffffff',
-          marginLeft: '6px',
-        },
-      }}
-    />
-    <Chip
-      label="Cached: Never"
-      size="small"
-      sx={{
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        color: '#121313f8',
-        fontWeight: 500,
-        fontSize: '14px',
-        height: '26px',
-        borderRadius: '4px',
-      }}
-    />
-    {showroomName && (
-      <Chip
-        label={`Showroom: ${showroomName}`}
-        size="small"
-        sx={{
-          color: '#17a871ff',
-          fontWeight: 500,
-          fontSize: '14px',
-          height: '26px',
-          borderRadius: '4px',
-        }}
-      />
-    )}
-  </Box>
-</Box>
-
-
+            {/* Chips row below the title */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mt: 0.5
+              }}
+            >
+              <Chip
+                label={onlineStatus ? 'Online' : 'Offline'}
+                size="small"
+                icon={
+                  onlineStatus ? (
+                    <CloudIcon sx={{ fontSize: '14px !important' }} />
+                  ) : (
+                    <CloudOffIcon sx={{ fontSize: '14px !important' }} />
+                  )
+                }
+                sx={{
+                  backgroundColor: onlineStatus ? '#18a381ff' : '#757575',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '11px',
+                  height: '26px',
+                  borderRadius: '4px',
+                  '& .MuiChip-icon': {
+                    color: '#ffffff',
+                    marginLeft: '6px'
+                  }
+                }}
+              />
+              <Chip
+                label="Cached: Never"
+                size="small"
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  color: '#121313f8',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  height: '26px',
+                  borderRadius: '4px'
+                }}
+              />
+              {showroomName && (
+                <Chip
+                  label={`Showroom: ${showroomName}`}
+                  size="small"
+                  sx={{
+                    color: '#17a871ff',
+                    fontWeight: 500,
+                    fontSize: '14px',
+                    height: '26px',
+                    borderRadius: '4px'
+                  }}
+                />
+              )}
+            </Box>
+          </Box>
 
           {/* Right Section: Sync + Menu */}
           <Box
-  sx={{
-    display: 'flex',
-    alignItems: 'flex-start', // match alignment with title
-    justifyContent: 'flex-end',
-    gap: 1.5,
-    pt: 0.5, // slight top padding to center visually
-  }}
->
-
+            sx={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'flex-end',
+              gap: 1,
+              pt: 0.5
+            }}
+          >
             <Button
               variant="contained"
               size="medium"
@@ -366,11 +487,11 @@ const OwnerList = () => {
                 minWidth: 'auto',
                 '&:hover': {
                   backgroundColor: '#fafafa',
-                  boxShadow: 'none',
+                  boxShadow: 'none'
                 },
                 '&:disabled': {
                   backgroundColor: '#e0e0e0',
-                  color: '#999',
+                  color: '#999'
                 }
               }}
             >
@@ -385,9 +506,7 @@ const OwnerList = () => {
                 width: '36px',
                 height: '36px',
                 borderRadius: '4px',
-                '&:hover': { 
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)' 
-                },
+                '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
               }}
             >
               <MoreVertIcon />
@@ -412,7 +531,7 @@ const OwnerList = () => {
                   handleMenuClose();
                   handleManualRefresh();
                 }}
-                sx={{ 
+                sx={{
                   fontWeight: 500,
                   fontSize: '14px',
                   py: 1.5,
@@ -427,89 +546,136 @@ const OwnerList = () => {
         </Box>
       </Box>
 
-      {/* Table Section */}
-      <Box
-  sx={{
-    flexGrow: 1,
-    px: 3,
-    py: 1, // reduced from 3 to 1.5
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: '#f5f5f5',
-  }}
->
-
+      {/* Table Section - no nested scroll */}
+      <Box sx={{ flex: 1, px: 1, pb: 1 }}>
         {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
+              overflow: 'hidden'
+            }}
+          >
             <CircularProgress size={50} sx={{ color: '#1976d2' }} />
           </Box>
         ) : error ? (
-          <Alert severity="error" sx={{ mb: 2, fontSize: '14px', fontWeight: 600 }}>
+          <Alert
+            severity="error"
+            sx={{ mb: 2, fontSize: '14px', fontWeight: 600 }}
+          >
             {error}
-            <Button size="small" onClick={loadOwners} sx={{ ml: 2, fontWeight: 700 }}>
+            <Button
+              size="small"
+              onClick={loadOwners}
+              sx={{ ml: 2, fontWeight: 700 }}
+            >
               Retry
             </Button>
           </Alert>
         ) : (
-          <Box sx={{ 
-            backgroundColor: '#ffffff',
-            borderRadius: '4px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-            overflow: 'hidden',
-            height: '100%',
-            border: '1px solid #e0e0e0',
-            '& table': {
-              width: '100%',
-              tableLayout: 'fixed',
-            },
-            '& thead th': {
-              textAlign: 'left !important',
-              paddingLeft: '16px !important',
-              paddingRight: '16px !important',
-              paddingTop: '12px !important',
-              paddingBottom: '12px !important',
-              verticalAlign: 'middle !important',
-            },
-            '& thead th:first-child': {
-              width: '60px !important',
-              paddingRight: '8px !important',
-              paddingLeft: '24px !important',
-            },
-            '& thead th:nth-child(2)': {
+          <Box
+            sx={{
+              backgroundColor: '#ffffff',
+              borderRadius: '4px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              border: '1px solid #e0e0e0',
+              overflow: 'visible',
+              '& *': {
+                overflow: 'visible !important',
+                maxHeight: 'none !important'
+              },
+              '& > div': {
+                overflow: 'visible !important',
+                height: 'auto !important',
+                maxHeight: 'none !important'
+              },
+              '& .MuiTableContainer-root': {
+                overflow: 'visible !important',
+                maxHeight: 'none !important',
+                height: 'auto !important'
+              },
+              '& .MuiTable-root': {
+                overflow: 'visible !important'
+              },
+              '& .MuiPaper-root': {
+                overflow: 'visible !important',
+                boxShadow: 'none !important',
+                maxHeight: 'none !important',
+                height: 'auto !important'
+              },
+              '& .ReactTable': {
+                overflow: 'visible !important',
+                maxHeight: 'none !important',
+                height: 'auto !important'
+              },
+              '& [class*="Table"]': {
+                overflow: 'visible !important',
+                maxHeight: 'none !important',
+                height: 'auto !important'
+              },
+              '& table': {
+                width: '100%',
+                tableLayout: 'fixed'
+              },
+              '& thead th': {
+                textAlign: 'left !important',
+                paddingLeft: '16px !important',
+                paddingRight: '16px !important',
+                paddingTop: '12px !important',
+                paddingBottom: '12px !important',
+                verticalAlign: 'middle !important'
+              },
+              '& thead th:first-of-type': {
+                width: '60px !important',
+                paddingRight: '8px !important',
+                paddingLeft: '24px !important'
+              },
+              '& thead th:nth-of-type(2)': {
+                paddingLeft: '8px !important',
+                paddingRight: '16px !important'
+              },
+              '& thead th:nth-of-type(3)': {
+                paddingLeft: '16px !important'
+              },
+              '& tbody td': {
+                textAlign: 'left !important',
+                paddingLeft: '16px !important',
+                paddingRight: '16px !important',
+                paddingTop: '12px !important',
+                paddingBottom: '12px !important',
+                verticalAlign: 'middle !important'
+              },
+              '& tbody td:first-of-type': {
+                width: '60px !important',
+                paddingRight: '8px !important',
+                paddingLeft: '24px !important'
+              },
+              '& tbody td:nth-of-type(2)': {
               paddingLeft: '8px !important',
-              paddingRight: '16px !important',
+              paddingRight: '16px !important'
             },
-            '& thead th:nth-child(3)': {
-              paddingLeft: '16px !important',
+            '& tbody td:nth-of-type(3)': {
+              paddingLeft: '16px !important'
             },
-            '& tbody td': {
-              textAlign: 'left !important',
-              paddingLeft: '16px !important',
-              paddingRight: '16px !important',
-              paddingTop: '12px !important',
-              paddingBottom: '12px !important',
-              verticalAlign: 'middle !important',
+
+            // 👇 Add this part
+            '& thead th:nth-of-type(2), & tbody td:nth-of-type(2)': {
+              textAlign: 'left !important'
             },
-            '& tbody td:first-child': {
-              width: '60px !important',
-              paddingRight: '8px !important',
-              paddingLeft: '24px !important',
+            '& thead th:nth-of-type(3), & tbody td:nth-of-type(3)': {
+              textAlign: 'left !important'
             },
-            '& tbody td:nth-child(2)': {
-              paddingLeft: '8px !important',
-              paddingRight: '16px !important',
-            },
-            '& tbody td:nth-child(3)': {
-              paddingLeft: '16px !important',
-            },
-            '& thead th:last-child': {
-              textAlign: 'center !important',
-            },
-            '& tbody td:last-child': {
-              textAlign: 'center !important',
-            }
-          }}>
+
+              '& thead th:last-child': {
+                textAlign: 'center !important'
+              },
+              '& tbody td:last-child': {
+                textAlign: 'center !important'
+              }
+            }}
+          >
             <ReactTable<Owner>
               columns={columns}
               exportColumns={exportColumns}

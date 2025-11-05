@@ -86,81 +86,95 @@ function registerOwnerListHandlers(ipcMain) {
   });
 
   // Compare PDFs - Open file dialog for PDF selection
-  ipcMain.handle('compare-pdfs', async (event, ownerName, basePath) => {
-    try {
-      // Construct the default path: Tri Color Honda/[Owner Name] - From Mobiles/Final Pdf/
-      const defaultPath = path.join(
-        basePath,
-        `${ownerName} - From Mobiles`,
-        'Final Pdf'
-      );
-
-      // Check if the Final Pdf folder exists
-      let dialogPath = defaultPath;
-      try {
-        await fs.access(defaultPath);
-      } catch (error) {
-        // If Final Pdf folder doesn't exist, try parent folder
-        const parentPath = path.join(basePath, `${ownerName} - From Mobiles`);
-        try {
-          await fs.access(parentPath);
-          dialogPath = parentPath;
-        } catch {
-          // If neither exists, use base path
-          dialogPath = basePath;
-        }
-      }
-
-      // Open file dialog with PDF filter
-      const result = await dialog.showOpenDialog({
-        title: `Select PDFs to Compare - ${ownerName}`,
-        defaultPath: dialogPath,
-        properties: ['openFile', 'multiSelections'],
-        filters: [
-          { name: 'PDF Files', extensions: ['pdf'] },
-          { name: 'All Files', extensions: ['*'] }
-        ]
+  // Compare PDFs - Open file dialog for PDF selection
+ipcMain.handle('compare-pdfs', async (event, ownerName, basePath) => {
+  try {
+    // Get the owner's folder name from get-owner-list
+    // We need the full folder name like "Dipak Babar_123456789"
+    const fromMobilesPath = path.join(basePath, '1 FromMobiles');
+    
+    // Read all folders to find the matching owner
+    const items = await fs.readdir(fromMobilesPath, { withFileTypes: true });
+    const ownerFolder = items
+      .filter((item) => item.isDirectory())
+      .find((item) => {
+        const parts = item.name.split('_');
+        return parts[0].trim() === ownerName;
       });
 
-      if (result.canceled) {
-        return {
-          success: false,
-          canceled: true,
-          message: 'File selection canceled'
-        };
-      }
-
-      const selectedFiles = result.filePaths;
-
-      // Validate that at least 2 PDFs are selected
-      // Validate: At least 2 PDFs must be selected
-if (selectedFiles.length < 2) {
-  return {
-    success: false,
-    error: 'Please select at least two PDFs',
-    filesCount: selectedFiles.length
-  };
-}
-
-      // Open all selected PDFs
-      for (const filePath of selectedFiles) {
-        await shell.openPath(filePath);
-      }
-
-      return {
-        success: true,
-        message: `Opening ${selectedFiles.length} PDFs for comparison`,
-        files: selectedFiles,
-        count: selectedFiles.length
-      };
-    } catch (error) {
-      console.error('Error in compare PDFs:', error);
+    if (!ownerFolder) {
       return {
         success: false,
-        error: error.message
+        error: `Owner folder not found for: ${ownerName}`
       };
     }
-  });
+
+    // Construct the path: D:\Tri-Color Honda\J FromMobiles\Dipak Babar_123456789\Final PDFs
+    const defaultPath = path.join(
+      fromMobilesPath,
+      ownerFolder.name,
+      'Final PDFs'  // Note: capital F and plural
+    );
+
+    console.log('Opening folder for compare:', defaultPath);
+
+    // Check if the Final PDFs folder exists
+    let dialogPath = defaultPath;
+    try {
+      await fs.access(defaultPath);
+    } catch (error) {
+      console.log('Final PDFs folder not found, using parent folder');
+      // If Final PDFs folder doesn't exist, use owner's main folder
+      dialogPath = path.join(fromMobilesPath, ownerFolder.name);
+    }
+
+    // Open file dialog with PDF filter
+    const result = await dialog.showOpenDialog({
+      title: `Select PDFs to Compare - ${ownerName}`,
+      defaultPath: dialogPath,
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'PDF Files', extensions: ['pdf'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (result.canceled) {
+      return {
+        success: false,
+        canceled: true,
+        message: 'File selection canceled'
+      };
+    }
+
+    const selectedFiles = result.filePaths;
+
+    // Validate: At least 2 PDFs must be selected
+    if (selectedFiles.length < 2) {
+      console.log('Validation failed: Less than 2 PDFs selected');
+      return {
+        success: false,
+        error: 'Please select at least two PDFs',
+        count: selectedFiles.length
+      };
+    }
+
+    // Don't open PDFs automatically - just return the selected files
+    console.log('Validation passed: PDFs selected for comparison');
+    return {
+      success: true,
+      message: `${selectedFiles.length} PDFs selected for comparison`,
+      files: selectedFiles,
+      count: selectedFiles.length
+    };
+  } catch (error) {
+    console.error('Error in compare PDFs:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
 }
 
 module.exports = { registerOwnerListHandlers };

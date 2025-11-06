@@ -424,6 +424,7 @@ const handlePDFComparison = (pdfPaths: string[] | undefined, ownerName: string) 
                   }
                 }}
               />
+            
               <Chip
                 label="Cached: Never"
                 size="small"
